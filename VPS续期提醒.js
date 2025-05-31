@@ -5,6 +5,8 @@
 // @description  VPS续期提醒工具，支持自定义提醒周期和单个VPS续期。比如hax.co.id、woiden.id等
 // @author       Gally
 // @match        *://*/*
+// @match        https://hax.co.id/*
+// @match        https://woiden.id/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_addStyle
