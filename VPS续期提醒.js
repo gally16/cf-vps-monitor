@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         VPS续期提醒
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.6
 // @description  VPS续期提醒工具，支持自定义提醒周期和单个VPS续期
-// @author       You
+// @author       Gally
 // @match        *://*/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_addStyle
+// @license      MIT  // <--- 添加许可证声明
 // ==/UserScript==
 
 (function() {
@@ -20,8 +21,8 @@
             right: 20px;
             bottom: 20px;
             width: 340px;
-            background-color: #fff;
-            border: none;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             padding: 20px;
@@ -29,8 +30,8 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: none;
             transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
         }
         #vps-reminder-title {
             font-size: 18px;
@@ -92,6 +93,10 @@
             border-left: 4px solid #FBBC05;
             background-color: rgba(251, 188, 5, 0.08);
         }
+        .vps-item-notice {
+            border-left: 4px solid #4285F4;
+            background-color: rgba(66, 133, 244, 0.08);
+        }
         .vps-item-normal {
             border-left: 4px solid #34A853;
             background-color: rgba(52, 168, 83, 0.08);
@@ -116,6 +121,9 @@
         }
         .vps-status-warning {
             color: #FBBC05;
+        }
+        .vps-status-notice {
+            color: #4285F4;
         }
         .vps-status-normal {
             color: #34A853;
@@ -185,14 +193,16 @@
             width: 500px;
             max-height: 80vh;
             overflow-y: auto;
-            background-color: #fff;
-            border: none;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             padding: 25px;
             z-index: 10000;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: none;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
         }
         #vps-settings-container::-webkit-scrollbar {
             width: 6px;
@@ -328,7 +338,7 @@
 
     // 获取VPS数据
     let vpsData = GM_getValue('vpsData', defaultVpsData);
-    
+
     // 用于记录今天是否已经关闭过提醒
     let dismissedForToday = false;
 
@@ -336,40 +346,40 @@
     function createReminderContainer() {
         const container = document.createElement('div');
         container.id = 'vps-reminder-container';
-        
+
         const title = document.createElement('div');
         title.id = 'vps-reminder-title';
         title.textContent = 'VPS续期提醒';
-        
+
         const content = document.createElement('div');
         content.id = 'vps-reminder-content';
-        
+
         const buttons = document.createElement('div');
         buttons.id = 'vps-reminder-buttons';
-        
+
         const renewAllButton = document.createElement('button');
         renewAllButton.id = 'vps-reminder-renew-all';
         renewAllButton.textContent = '全部已续期';
         renewAllButton.addEventListener('click', handleRenewAll);
-        
+
         const settingsButton = document.createElement('button');
         settingsButton.id = 'vps-reminder-settings';
         settingsButton.textContent = '设置';
         settingsButton.addEventListener('click', showSettings);
-        
+
         const dismissButton = document.createElement('button');
         dismissButton.id = 'vps-reminder-dismiss';
         dismissButton.textContent = '今天不再提醒';
         dismissButton.addEventListener('click', dismissForToday);
-        
+
         buttons.appendChild(renewAllButton);
         buttons.appendChild(settingsButton);
         buttons.appendChild(dismissButton);
-        
+
         container.appendChild(title);
         container.appendChild(content);
         container.appendChild(buttons);
-        
+
         document.body.appendChild(container);
     }
 
@@ -377,61 +387,61 @@
     function createSettingsContainer() {
         const container = document.createElement('div');
         container.id = 'vps-settings-container';
-        
+
         const title = document.createElement('div');
         title.id = 'vps-settings-title';
         title.textContent = 'VPS提醒设置';
-        
+
         container.appendChild(title);
-        
+
         const settingsContent = document.createElement('div');
         settingsContent.id = 'vps-settings-content';
         container.appendChild(settingsContent);
-        
+
         // 创建添加新VPS按钮
         const addNewButton = document.createElement('button');
         addNewButton.id = 'vps-add-new';
         addNewButton.textContent = '添加新VPS';
         addNewButton.addEventListener('click', addNewVps);
         container.appendChild(addNewButton);
-        
+
         const buttons = document.createElement('div');
         buttons.id = 'vps-settings-buttons';
-        
+
         const cancelButton = document.createElement('button');
         cancelButton.id = 'vps-settings-cancel';
         cancelButton.textContent = '取消';
         cancelButton.addEventListener('click', () => {
             document.getElementById('vps-settings-container').style.display = 'none';
         });
-        
+
         const saveButton = document.createElement('button');
         saveButton.id = 'vps-settings-save';
         saveButton.textContent = '保存';
         saveButton.addEventListener('click', saveSettings);
-        
+
         buttons.appendChild(cancelButton);
         buttons.appendChild(saveButton);
-        
+
         container.appendChild(buttons);
-        
+
         document.body.appendChild(container);
-        
+
         // 更新设置内容
         updateSettingsContent();
     }
-    
+
     // 更新设置内容
     function updateSettingsContent() {
         const settingsContent = document.getElementById('vps-settings-content');
         settingsContent.innerHTML = '';
-        
+
         // 为每个VPS创建设置项
         vpsData.forEach(vps => {
             const item = document.createElement('div');
             item.className = 'vps-settings-item';
             item.dataset.id = vps.id;
-            
+
             // 删除按钮
             if (vpsData.length > 1) {
                 const deleteBtn = document.createElement('button');
@@ -442,43 +452,43 @@
                 });
                 item.appendChild(deleteBtn);
             }
-            
+
             const nameLabel = document.createElement('label');
             nameLabel.textContent = `${vps.name} 名称`;
-            
+
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.id = `vps-name-${vps.id}`;
             nameInput.value = vps.name;
-            
+
             const cycleLabel = document.createElement('label');
             cycleLabel.textContent = `${vps.name} 提醒周期(天)`;
-            
+
             const cycleInput = document.createElement('input');
             cycleInput.type = 'number';
             cycleInput.id = `vps-cycle-${vps.id}`;
             cycleInput.value = vps.cycle;
             cycleInput.min = 1;
-            
+
             const dateLabel = document.createElement('label');
             dateLabel.textContent = `${vps.name} 下次提醒日期`;
-            
+
             const dateInput = document.createElement('input');
             dateInput.type = 'date';
             dateInput.id = `vps-date-${vps.id}`;
             dateInput.value = vps.nextDate || formatDate(new Date());
-            
+
             item.appendChild(nameLabel);
             item.appendChild(nameInput);
             item.appendChild(cycleLabel);
             item.appendChild(cycleInput);
             item.appendChild(dateLabel);
             item.appendChild(dateInput);
-            
+
             settingsContent.appendChild(item);
         });
     }
-    
+
     // 添加新VPS
     function addNewVps() {
         // 生成新ID
@@ -486,7 +496,7 @@
         vpsData.forEach(vps => {
             if (vps.id > maxId) maxId = vps.id;
         });
-        
+
         // 添加新VPS数据
         const newVps = {
             id: maxId + 1,
@@ -495,13 +505,13 @@
             nextDate: formatDate(new Date()),
             needRemind: false
         };
-        
+
         vpsData.push(newVps);
-        
+
         // 更新设置内容
         updateSettingsContent();
     }
-    
+
     // 删除VPS
     function deleteVps(id) {
         vpsData = vpsData.filter(vps => vps.id !== id);
@@ -516,20 +526,20 @@
     // 保存设置
     function saveSettings() {
         const newVpsData = [];
-        
+
         // 获取所有设置项
         const settingsItems = document.querySelectorAll('.vps-settings-item');
-        
+
         settingsItems.forEach(item => {
             const id = parseInt(item.dataset.id);
             const name = document.getElementById(`vps-name-${id}`).value;
             const cycle = parseInt(document.getElementById(`vps-cycle-${id}`).value);
             const nextDate = document.getElementById(`vps-date-${id}`).value;
-            
+
             // 查找原始数据中的needRemind状态
             const originalVps = vpsData.find(vps => vps.id === id);
             const needRemind = originalVps ? originalVps.needRemind : false;
-            
+
             newVpsData.push({
                 id,
                 name,
@@ -538,11 +548,11 @@
                 needRemind
             });
         });
-        
+
         vpsData = newVpsData;
         GM_setValue('vpsData', vpsData);
         document.getElementById('vps-settings-container').style.display = 'none';
-        
+
         // 重新检查提醒
         checkReminders();
     }
@@ -579,26 +589,26 @@
         if (dismissedForToday) {
             return;
         }
-        
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         let hasRemindersNeedAttention = false; // 是否有VPS需要立即提醒
         let allVpsWithInfo = []; // 所有VPS及其状态信息
-        
+
         // 为所有VPS计算到期状态和剩余天数
         vpsData.forEach(vps => {
             if (!vps.nextDate) {
                 vps.nextDate = formatDate(new Date());
             }
-            
+
             const nextDate = parseDate(vps.nextDate);
             nextDate.setHours(0, 0, 0, 0);
-            
+
             // 计算距离到期日期的天数
             const diff = nextDate - today;
             const daysUntil = Math.ceil(diff / (1000 * 60 * 60 * 24));
-            
+
             // 标记需要提醒的VPS
             if (daysUntil <= 0 || daysUntil === 1 || daysUntil === 2) {
                 hasRemindersNeedAttention = true;
@@ -606,60 +616,60 @@
             } else {
                 vps.needRemind = false;
             }
-            
+
             // 将VPS信息和剩余天数添加到数组
             allVpsWithInfo.push({
                 ...vps,
                 daysUntil: daysUntil
             });
         });
-        
+
         // 按剩余天数排序（升序）
         allVpsWithInfo.sort((a, b) => a.daysUntil - b.daysUntil);
-        
+
         // 如果有需要提醒的VPS，显示所有VPS的信息
         if (hasRemindersNeedAttention) {
             let reminderContent = '';
-            
+
             // 添加所有VPS信息，按剩余天数排序
             allVpsWithInfo.forEach(vps => {
                 let statusClass = '';
                 let statusText = '';
                 let itemClass = '';
-                
+
                 // 根据剩余天数设置状态和样式
                 if (vps.daysUntil <= 0) {
                     statusClass = 'vps-status-expired';
-                    statusText = '已过期，需要续期';
+                    statusText = '即将过期，需要续期';
                     itemClass = 'vps-item-expired';
                 } else if (vps.daysUntil === 1) {
                     statusClass = 'vps-status-warning';
                     statusText = '明天到期，需要续期';
                     itemClass = 'vps-item-warning';
                 } else if (vps.daysUntil === 2) {
-                    statusClass = 'vps-status-warning';
+                    statusClass = 'vps-status-notice';
                     statusText = '后天到期，需要续期';
-                    itemClass = 'vps-item-warning';
+                    itemClass = 'vps-item-notice';
                 } else {
                     statusClass = 'vps-status-normal';
                     statusText = `还有 ${vps.daysUntil} 天到期`;
                     itemClass = 'vps-item-normal';
                 }
-                
+
                 // 根据是否需要提醒设置不透明度
                 const opacity = vps.needRemind ? '1' : '0.7';
-                
+
                 reminderContent += `<div class="vps-item ${itemClass}" style="opacity: ${opacity}">
                     <div class="vps-item-name">${vps.name}</div>
                     <div class="vps-item-date">下次续期日期: ${vps.nextDate}</div>
                     <div class="vps-item-status ${statusClass}">${statusText}</div>
-                    ${vps.needRemind ? `<button class="vps-item-renew" data-id="${vps.id}">已续期</button>` : ''}
+                    ${vps.needRemind ? `<button class="vps-item-renew" data-id="${vps.id}">我已续期</button>` : ''}
                 </div>`;
             });
-            
+
             document.getElementById('vps-reminder-content').innerHTML = reminderContent;
             document.getElementById('vps-reminder-container').style.display = 'block';
-            
+
             // 为每个单独的续期按钮添加事件
             document.querySelectorAll('.vps-item-renew').forEach(button => {
                 button.addEventListener('click', function(e) {
@@ -668,49 +678,47 @@
                 });
             });
         }
-        
+
         // 更新存储的数据
         GM_setValue('vpsData', vpsData);
     }
 
     // 处理单个VPS续期
     function handleRenewSingle(id) {
-        const today = new Date();
-        
         vpsData.forEach(vps => {
             if (vps.id === id && vps.needRemind) {
-                // 计算新的提醒日期
-                const newDate = new Date(today);
-                newDate.setDate(today.getDate() + vps.cycle);
+                // 使用原到期日期计算新的提醒日期，而不是当前日期
+                const originalDate = parseDate(vps.nextDate);
+                const newDate = new Date(originalDate);
+                newDate.setDate(originalDate.getDate() + vps.cycle);
                 vps.nextDate = formatDate(newDate);
                 vps.needRemind = false;
             }
         });
-        
+
         // 更新存储的数据
         GM_setValue('vpsData', vpsData);
-        
+
         // 重新检查是否还有需要提醒的VPS
         checkReminders();
     }
 
     // 处理全部已续期按钮点击
     function handleRenewAll() {
-        const today = new Date();
-        
         vpsData.forEach(vps => {
             if (vps.needRemind) {
-                // 计算新的提醒日期
-                const newDate = new Date(today);
-                newDate.setDate(today.getDate() + vps.cycle);
+                // 使用原到期日期计算新的提醒日期，而不是当前日期
+                const originalDate = parseDate(vps.nextDate);
+                const newDate = new Date(originalDate);
+                newDate.setDate(originalDate.getDate() + vps.cycle);
                 vps.nextDate = formatDate(newDate);
                 vps.needRemind = false;
             }
         });
-        
+
         // 更新存储的数据
         GM_setValue('vpsData', vpsData);
-        
+
         // 隐藏提醒
         document.getElementById('vps-reminder-container').style.display = 'none';
     }
@@ -719,7 +727,7 @@
     function init() {
         createReminderContainer();
         createSettingsContainer();
-        
+
         // 如果是首次使用，显示设置界面
         if (!GM_getValue('initialized', false)) {
             showSettings();
@@ -732,4 +740,4 @@
 
     // 等待页面加载完成后初始化
     window.addEventListener('load', init);
-})(); 
+})();
