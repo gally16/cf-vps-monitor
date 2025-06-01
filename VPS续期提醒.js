@@ -1,12 +1,10 @@
 // ==UserScript==
 // @name         VPS续期提醒
 // @namespace    http://tampermonkey.net/
-// @version      0.6
+// @version      0.7
 // @description  VPS续期提醒工具，支持自定义提醒周期和单个VPS续期。比如hax.co.id、woiden.id等
 // @author       Gally
 // @match        *://*/*
-// @match        https://hax.co.id/*
-// @match        https://woiden.id/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_addStyle
@@ -15,6 +13,31 @@
 
 (function() {
     'use strict';
+
+    // 检查当前窗口是否是弹出窗口或iframe
+    function isPopupOrIframe() {
+        // 检查是否在iframe中
+        if (window.top !== window.self) {
+            return true;
+        }
+        
+        // 检查是否是弹出窗口（通常尺寸较小）
+        if (window.innerWidth < 800 || window.innerHeight < 600) {
+            return true;
+        }
+        
+        // 检查是否有opener（由其他窗口打开）
+        if (window.opener && window.opener !== window) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // 如果是弹出窗口或iframe，不运行脚本
+    if (isPopupOrIframe()) {
+        return;
+    }
 
     // 添加样式
     GM_addStyle(`
